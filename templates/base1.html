@@ -1,0 +1,55 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>
+        {% block title %} {% endblock %}
+    </title>
+
+    <link REL="SHORTCUT ICON" HREF="{% static "images/favicon.ico" %}"/>
+    <link rel="stylesheet" href="{% static 'css/bootstrap.css' %}">
+
+</head>
+<body>
+
+
+
+<div class='container-fluid'>
+    {% include 'header.html' %}
+    <div class='row'>
+        <div class='col-sm-4 col-md-4'>
+            <div class='panel panel-default'>
+                <div class='panel-heading'>
+                    <h3>
+                        园区结构图
+                    </h3>
+                </div>
+                <div class='panel-body'>
+                    <div class='list-group'>
+                        {% block tree %} {% endblock %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class='col-sm-8 col-md-8'>
+            <div class='panel panel-default'>
+                <div class='panel-heading'>
+                    {% block detail %} {% endblock %}
+                </div>
+                <div class='panel-body'>
+                    {% block showlist %} {% endblock %}
+                </div>
+                <div class='panel-footer'>
+                    {% block listfooter %} {% endblock %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- jQuery (Bootstrap 的 JavaScript 插件需要引入 jQuery) -->
+<script src="https://code.jquery.com/jquery.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+
+</html>

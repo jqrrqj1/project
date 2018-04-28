@@ -1,0 +1,215 @@
+{% extends 'base1.html' %}
+{% load staticfiles %}
+{% block title %} 图片管理系统 {% endblock %}
+{% block detail %}
+    <h4>图片列表</h4>
+{% endblock %}
+{% block tree %}
+    <div id="jstree_div"></div>
+{% endblock tree %}
+
+{% block showlist %}
+    <input type="hidden" id="hiddennodeid" value={{ data }}>
+    <input type="hidden" id="currentnodeid" value={{ currentnodeid }}>
+    <div id="list">
+        <table>
+            <tr>
+                <td><input id="checkall" type="checkbox"></td>
+                <td>名称</td>
+                <td>内容</td>
+            </tr>
+            {% for foo in photoinfolists.all %}
+                <div>
+                    <tr>
+                        <td><input type="checkbox" name="box" class="checknode" value={{ foo.pk }} ></td>
+                        <td>{{ foo.pname }}</td>
+                        <td>{{ foo.pcontend }}</td>
+                    </tr>
+                </div>
+            {% endfor %}
+        </table>
+    </div>
+{% endblock %}
+
+
+{% block listfooter %}
+    <div class = "pagination">
+    <span>
+        {% if  page.has_previous %}
+            <a href="?pid={{ currentnodeid }}&page={{ page.previous_page_number }}">Previous</a>
+
+        {% endif %}
+    <span class="current">
+        Page{{ page.number }} of {{ page.paginator.num_pages }}
+    </span>
+    {% if page.has_next %}
+        <a href="?pid={{ currentnodeid }}&page={{ page.next_page_number }}">Next</a>
+
+    {% endif %}
+    </span>
+    </div>
+
+    <div id="button">
+        <input id="newAdd" type="submit" value="新增">
+        <input id="modifyObj" type="submit" value="修改">
+        <input id="delObj" type="submit" value="删除">
+    </div>
+{% endblock %}
+
+{% block  scripts %}
+
+    {#        <script type="text/javascript" src="{% static 'js/jquery.js' %}" />#}
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/jstree/3.3.5/themes/default/style.min.css"/>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jstree/3.3.5/jstree.min.js"></script>
+   
+    <script type="text/javascript"> {#    初始化树#}
+        $(function () {
+                $("#jstree_div").jstree({
+                    "core": {
+                        "themes": {
+                            "responsive": false
+                        },
+                        // so that create works
+                        "check_callback": true,
+                        'data': function (obj, callback) {
+                            var jsonstr = "[]";
+                            var jsonarray = eval('(' + jsonstr + ')');
+
+                            $.ajax({
+                                type: "GET",
+                                url: "/photoManage/jstreeDetail/",
+                                dataType: "json",
+                                async: false,
+                                success: function (result) {
+                                    var arrays = result;
+
+                                    if ((typeof result == 'object') && result.constructor == Object) {
+                                        arrays = result;
+                                    } else {
+                                        arrays = eval("(" + result + ")");
+                                    }
+
+                                    for (var i = 0; i < arrays.length; i++) {
+                                        console.log(arrays[i])
+                                        var arr = {
+                                            "id": arrays[i].pk,
+                                            "parent": arrays[i].pk == "1" ? "#" : arrays[i].superpath,
+                                            "text": arrays[i].tname,
+
+                                        };
+                                        jsonarray.push(arr);
+                                    }
+                                }
+
+                            });
+                            callback.call(this, jsonarray);
+                        }
+                    },//core
+                    "plugins": ["contextmenu"],
+                    rules: {
+                        type_attr: "rel",     //设置节点类型
+                        valid_children: "root"  // 只有root节点才能作为顶级结点
+                    },
+                    types: {
+                        "default": {
+                            clickable: true,
+                            draggable: false    //设置节点不可拖拽
+                        },
+                        "root": {
+                            valid_children: "folder", //设置下级节点类型，可是数组
+                            icon: {
+                                image: "root.png"//设置当前节点icon图片,路径自己决定
+                            }
+                        },
+                        "folder": {
+                            valid_children: "leaf",
+                            icon: {
+                                image: "folder.png"
+                            }
+                        },
+                        "leaf": {
+                            valid_children: "none",
+                            icon: {
+                                image: "leaf.png"
+                            }
+                        }
+                    }
+
+
+                });
+            }
+        )
+        $('#jstree_div').on("changed.jstree", function (e, node) {//触发事件
+            if (node.selected.length) {
+                var id = node.instance.get_node(node.selected[0]).id
+                $.post('/photoManage/showlistDetail/?pid=' + id, {pid: id}, function () {
+                    window.location.href = '/photoManage/showlistDetail/?pid=' + id;
+                });
+            } //输出点击的内容
+        });
+    </script>
+
+    <script>{#    初始化页面list#}
+        $(document).ready(function () {
+            var nodeid = $("#hiddennodeid").val()
+            $("#textInput", document).val($("#hiddennodeid").val())
+            if (nodeid) {
+                $("#jstree_div", document).on("loaded.jstree", function (event, data) {
+                    //data.instance.open_node([1, 10]); // 多个节点 (展开多个几点只有在一次性装载后所有节点后才可行）
+                    var inst = data.instance;
+                    inst.open_node(nodeid);//打开当前节点
+                    inst._open_to(nodeid);//打开当前节点所有父节点
+                });
+            }
+        });
+    </script>
+    <script language="javascript">//按钮操作js
+        // 全选/取消全部
+        $("#checkall").click(function () {
+            if (this.checked == true) {
+                $(".checknode").each(function () {
+                    this.checked = true;
+                });
+            } else {
+                $(".checknode").each(function () {
+                    this.checked = false;
+                });
+            }
+        });
+        {#子按钮全部选中自动checkAll选中，全选状态下取消某一子按钮checkAll取消#}
+        var allLength = $(".checknode").length; //所有的checkbox的长度
+        $(".checknode").each(function () {
+            $(this).bind('click', function () {
+                var selectedLength = $(".checknode:checked").length;//所有的选中的checkbox的长度
+                if (selectedLength == allLength) {
+                    $('#checkall').prop("checked", true);//全选按钮
+                } else {
+                    $('#checkall').prop("checked", false);
+                }
+            })
+        });
+    </script>
+
+    <script>//新增、修改、删除操作js
+    $(function () {
+        $("#newAdd").click(function () {
+            alert($(".checknode:checked").length);
+            window.location.href = '/photoManage/initSave/'
+        });
+    });
+    $(function () {
+        $("#modifyObj").click(function () {
+            alert($(".checknode:checked").length);
+
+        });
+    });
+    $(function () {
+        $("#delObj").click(function () {
+            alert($(".checknode:checked").length);
+
+        });
+    });
+    </script>
+{% endblock %}
